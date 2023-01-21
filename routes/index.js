@@ -44,10 +44,12 @@ const createPromises = () => {
     'https://djinni.co/jobs/keyword-javascript/' 
   ]
 
-  const pages = 36
+  // const pages = 36
+  const pages = 6
 
   // for (let i = 2; i++; i < 100) {
-    console.log(urls);
+  console.log(urls);
+
   for (let i = 2; i < pages; i++) {
     // console.log('sdf');
     urls.push(urls[0] + `?page=${i}`)
@@ -68,34 +70,12 @@ const createPromises = () => {
   })
 }
 
-const processResponse = res => {
-  const $ = cheerio.load(res);
-  const vacancies = $('#vacancyListId ul li');
-  const promises = []
-  console.log(vacancies.length);
-  vacancies.each((i, el) => {
-    const href = $(el).find('.title a.vt')[0].attribs.href;
-    promises.push(fetchData(href))
-  });
-
-  return Promise.all(promises).then(res => {
-    return res.map((v, i) => {
-      // if (i > 0) return
-      const result = processVacancy(v)
-
-      if (result && result.length) return {
-        url: v.config.url,
-        match: result
-      }
-    })
-  })
-}
-
 const processDjinniResponse = res => {
   const $ = cheerio.load(res);
   const vacancies = $('.list-jobs li');
   const promises = []
   vacancies.each((i, el) => {
+    // if (i > 3) return
     // if (i > 0) return
     const href = $(el).find('a.profile')[0].attribs.href;
     promises.push(fetchData('https://djinni.co' + href))
@@ -122,7 +102,7 @@ async function fetchData(url){
   // console.log(url);
   let response = await axios(url).catch((err) => console.log(err));
   // console.log(response);
-  if(response.status !== 200){
+  if (response.status !== 200){
     console.log("Error occurred while fetching data");
     return
   }
@@ -166,6 +146,29 @@ function processDjinniVacancy(v) {
   // console.log(text);
   const matches = text.match(/\bai\b|machine learning|\bml\b/gi)
   return matches
+}
+
+const processResponse = res => {
+  const $ = cheerio.load(res);
+  const vacancies = $('#vacancyListId ul li');
+  const promises = []
+  console.log(vacancies.length);
+  vacancies.each((i, el) => {
+    const href = $(el).find('.title a.vt')[0].attribs.href;
+    promises.push(fetchData(href))
+  });
+
+  return Promise.all(promises).then(res => {
+    return res.map((v, i) => {
+      // if (i > 0) return
+      const result = processVacancy(v)
+
+      if (result && result.length) return {
+        url: v.config.url,
+        match: result
+      }
+    })
+  })
 }
 
 module.exports = router;
