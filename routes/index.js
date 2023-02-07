@@ -4,7 +4,7 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 // const url = "https://www.iban.com/exchange-rates";
 // const url = 'https://jobs.dou.ua/vacancies/?category=Front%20End';
-const url = 'https://djinni.co/jobs/keyword-javascript/';
+// const url = 'https://djinni.co/jobs/keyword-javascript/';
 
 /* GET home page. */
 router.get('/', function(req, routerRes, next) {
@@ -29,7 +29,6 @@ router.get('/', function(req, routerRes, next) {
         }
       })
       
-      // console.log(vacancies);
       routerRes.render('index', { title: 'Express', vacancies });
     })
   })
@@ -41,30 +40,32 @@ router.get('/', function(req, routerRes, next) {
 
 const createPromises = () => {
   const urls = [
-    'https://djinni.co/jobs/keyword-javascript/' 
+    'https://djinni.co/jobs/?primary_keyword=JavaScript' 
   ]
 
-  // const pages = 36
   const pages = 6
 
   // for (let i = 2; i++; i < 100) {
-  console.log(urls);
 
-  for (let i = 2; i < pages; i++) {
-    // console.log('sdf');
-    urls.push(urls[0] + `?page=${i}`)
-  } 
+  for (let i = 1; i < pages; i++) {
+    urls.push(urls[0] + `&page=${i}`)
+  }
 
-  console.log(urls);
   const promises = []
 
   return new Promise(resolve => {
     urls.forEach(url => {
       fetchData(url).then(response => {
-        promises.push(...processDjinniResponse(response.data))
-        if (promises.length > (pages * 10 + 10)) {
-          resolve(promises)
+        if (response && response.data) {
+          promises.push(...processDjinniResponse(response.data))
+          if (promises.length > (pages * 10)) {
+            resolve(promises)
+          }
+        } else {
+          console.log("eeeeeerrrrrr");
         }
+      }).catch(err => {
+        console.log(err);
       })
     })
   })
@@ -76,7 +77,6 @@ const processDjinniResponse = res => {
   const promises = []
   vacancies.each((i, el) => {
     // if (i > 3) return
-    // if (i > 0) return
     const href = $(el).find('a.profile')[0].attribs.href;
     promises.push(fetchData('https://djinni.co' + href))
   });
@@ -99,10 +99,11 @@ const processDjinniResponse = res => {
 async function fetchData(url){
   console.log("Crawling data...")
   // make http call to url
-  // console.log(url);
-  let response = await axios(url).catch((err) => console.log(err));
-  // console.log(response);
-  if (response.status !== 200){
+  let response = await axios(url).catch((err) => {
+    console.log(err)
+  });
+
+  if (response && response.status !== 200){
     console.log("Error occurred while fetching data");
     return
   }
@@ -110,24 +111,26 @@ async function fetchData(url){
   return response
 }
 
-function processVacancy(v) {
-  let text = ''
-  let vacancy = cheerio.load(v.data)
-  const info = vacancy('.info .l-t').html()
-  // console.log(info);
-  text += info
-  const header = vacancy('.l-vacancy h1').text()
-  text += header
-  const vacancySection = vacancy('.l-vacancy .vacancy-section')
-  text += ' '
-  text += vacancySection.html()
-  const matches = text.match(/\bai\b|machine learning|\bml\b/gi)
-  return matches
-}
+// function processVacancy(v) {
+//   let text = ''
+//   let vacancy = cheerio.load(v.data)
+//   const info = vacancy('.info .l-t').html()
+//   // console.log(info);
+//   text += info
+//   const header = vacancy('.l-vacancy h1').text()
+//   text += header
+//   const vacancySection = vacancy('.l-vacancy .vacancy-section')
+//   text += ' '
+//   text += vacancySection.html()
+//   const matches = text.match(/\bai\b|machine learning|\bml\b/gi)
+//   return matches
+// }
 
 function processDjinniVacancy(v) {
+  if (!v) return
   const $ = cheerio.load(v.data)
-  const jobPostPage = vacancy = $('.job-post-page')
+  // const jobPostPage = $('.job-post-page')
+  const jobPostPage = $('.wrapper')
   let text = jobPostPage.html()
   // let text = html
   // const header = $('.page-header h1').text().trim()
@@ -148,27 +151,27 @@ function processDjinniVacancy(v) {
   return matches
 }
 
-const processResponse = res => {
-  const $ = cheerio.load(res);
-  const vacancies = $('#vacancyListId ul li');
-  const promises = []
-  console.log(vacancies.length);
-  vacancies.each((i, el) => {
-    const href = $(el).find('.title a.vt')[0].attribs.href;
-    promises.push(fetchData(href))
-  });
+// const processResponse = res => {
+//   const $ = cheerio.load(res);
+//   const vacancies = $('#vacancyListId ul li');
+//   const promises = []
+//   console.log(vacancies.length);
+//   vacancies.each((i, el) => {
+//     const href = $(el).find('.title a.vt')[0].attribs.href;
+//     promises.push(fetchData(href))
+//   });
 
-  return Promise.all(promises).then(res => {
-    return res.map((v, i) => {
-      // if (i > 0) return
-      const result = processVacancy(v)
+//   return Promise.all(promises).then(res => {
+//     return res.map((v, i) => {
+//       // if (i > 0) return
+//       const result = processVacancy(v)
 
-      if (result && result.length) return {
-        url: v.config.url,
-        match: result
-      }
-    })
-  })
-}
+//       if (result && result.length) return {
+//         url: v.config.url,
+//         match: result
+//       }
+//     })
+//   })
+// }
 
 module.exports = router;
