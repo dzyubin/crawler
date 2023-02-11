@@ -43,7 +43,7 @@ const createPromises = () => {
     'https://djinni.co/jobs/?primary_keyword=JavaScript' 
   ]
 
-  const pages = 6
+  const pages = 16
 
   // for (let i = 2; i++; i < 100) {
 
